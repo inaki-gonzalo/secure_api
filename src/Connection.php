@@ -1,11 +1,8 @@
 <?php
 class Connection{
-    public function db_connect(){
-        echo "Connecting to db";
+    public function db_connect(){    
             
         try {
-            
-            
             $filename="../private/db_config.ini";
             $config=parse_ini_file($filename);
             
@@ -17,8 +14,7 @@ class Connection{
             
             # Connect to PosgreSQL Database using PDO
             $db = new PDO("pgsql:host=$host;port=$port;dbname=$dbname;user=$user;password=$password");
-            $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-            echo "It connected!\n";
+            $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );            
             
             return $db;
             

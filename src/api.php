@@ -4,8 +4,8 @@ require_once 'Auth.php';
 require_once 'Connection.php';
 
 // define variables and set to empty values
-$user_id = "";
-$user_key = "";
+$device_id = "";
+$device_key = "";
 $action = "";
 
 function test_input($data) {
@@ -22,10 +22,10 @@ if ($_SERVER["REQUEST_METHOD"] != "POST") {
 }
 
 #Sanity check the inputs
-$user_id = test_input($_POST["user_id"]);
-$user_key = test_input($_POST["user_key"]);
+$device_id = test_input($_POST["device_id"]);
+$device_key = test_input($_POST["device_key"]);
 $action = test_input($_POST["action"]);
-if($user_id=="" || $user_key == "" || $action==""){
+if($device_id=="" || $device_key == "" || $action==""){
 	echo("Invalid Request");
 	exit;
 
@@ -34,7 +34,7 @@ if($user_id=="" || $user_key == "" || $action==""){
 
 //Validate credentials
 $auth=new Auth();
-$result=$auth->authenticate_regular_user($user_id, $user_key);
+$result=$auth->authenticate_device($device_id, $device_key);
 
 if($result != TRUE){
     exit;
@@ -56,6 +56,62 @@ if (!in_array($action, $APIActions)) {
 if($action == "GetTime"){
 	$now = new DateTime();
 	echo $now->getTimestamp();   
+	exit;
+}
+
+if($action == "InsertData"){
+    
+	$now = new DateTime();
+	$server_time=$now->getTimestamp(); 
+	
+	$data_value = test_input($_POST["data_value"]);
+	$sensor_id = test_input($_POST["sensor_id"]);
+	$device_time = test_input($_POST["device_time"]);
+	if($data_value==""){
+		echo("Data empty!\n");
+		exit;
+	}
+	if($sensor_id ==""){
+	    echo("No sensor id!\n");
+	    exit;
+	}	
+	if($device_time ==""){
+	    echo("No device time!\n");
+	    exit;
+	}	
+	
+	$conn=new Connection();
+	$db = $conn->db_connect();
+	if($db == null){ //check connection was successful
+	    echo("database not available\n");
+	    exit;
+	}
+	
+	# the data we want to insert
+	$data = array( 'data_sensor_id' => $sensor_id,
+	    'data_value' => $data_value ,
+	    'data_device_time' => $device_time ,
+	    'data_server_time' => $server_time);
+	
+	try{
+	$STH = $db->prepare("INSERT INTO data (data_sensor_id, data_value, data_device_time,data_server_time) 
+                         values (:data_sensor_id, :data_value, 
+                                  to_timestamp(:data_device_time), to_timestamp(:data_server_time))");
+	$rc=$STH->execute($data);
+	
+	}catch(PDOException $e) {
+	    echo $e->getMessage();
+	    exit;
+	}
+	//Clean up database
+	$STH=null;
+	$db=null;
+	
+	if($rc == FALSE ){
+	    echo 'API: Failed to insert';
+	    exit;
+	}
+	echo ("Inserted data:".$data_value." at:".$now->getTimestamp());
 	exit;
 }
 
